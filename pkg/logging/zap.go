@@ -61,7 +61,7 @@ func (l *Logger) fileRotateWriter() io.Writer {
 		rotateLogs.WithRotationTime(time.Hour*24),
 	)
 	if err != nil {
-		log.Fatalln(err)
+		log.Panic(err)
 	}
 	return hook
 }

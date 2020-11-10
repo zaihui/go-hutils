@@ -9,7 +9,7 @@ import (
 
 const timeFormatter = "2006-01-02 15:04:05"
 
-var ServiceName = utils.GetEnv("SERVICE_NAME", "default")
+var serviceName = utils.GetEnv("SERVICE_NAME", "default")
 
 type AccessLog struct {
 	ClientIP   string
@@ -26,7 +26,7 @@ func (l AccessLog) Log(logger *zap.SugaredLogger) {
 	now := time.Now().Format(timeFormatter)
 	logger.Infof(
 		"%s %s %s %s $%q$ %s %d %d \"%s\" %s",
-		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol, l.StatusCode, l.Duration, l.Agent, ServiceName,
+		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol, l.StatusCode, l.Duration, l.Agent, serviceName,
 	)
 }
 
@@ -43,16 +43,16 @@ func (l RequestLog) Log(logger *zap.SugaredLogger) {
 	now := time.Now().Format(timeFormatter)
 	logger.Infof(
 		"%s %s %d %s $%q$ %s $%q$ %s",
-		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, ServiceName,
+		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
 	)
 }
 
 func Error(logger *zap.SugaredLogger, err error) {
 	now := time.Now().Format(timeFormatter)
-	logger.Errorf("%s ERROR %s %+v", ServiceName, now, err)
+	logger.Errorf("%s ERROR %s %+v", serviceName, now, err)
 }
 
 func Track(logger *zap.SugaredLogger, message interface{}) {
 	now := time.Now().Format(timeFormatter)
-	logger.Infof("%s INFO %s %s", ServiceName, now, message)
+	logger.Infof("%s INFO %s %s", serviceName, now, message)
 }

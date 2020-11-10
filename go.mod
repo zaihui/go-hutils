@@ -7,7 +7,6 @@ require (
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/facebook/ent v0.5.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
-	github.com/go-playground/assert/v2 v2.0.1
 	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
@@ -16,6 +15,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.3 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/prometheus/procfs v0.1.3 // indirect
+	github.com/stretchr/testify v1.6.1
 	github.com/tebeka/strftime v0.1.5 // indirect
 	go.elastic.co/apm v1.9.0
 	go.uber.org/multierr v1.6.0 // indirect

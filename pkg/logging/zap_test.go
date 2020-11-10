@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/go-playground/assert/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/zaihui/go-hutils/pkg/utils"
 )
 
