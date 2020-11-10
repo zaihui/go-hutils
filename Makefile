@@ -1,5 +1,5 @@
+VERSION=0.0.1
 COVERAGE_FILE=.coverage
-LOG_FILE=*.log*
 
 ##################################
 #######       Setup       ########
@@ -21,7 +21,7 @@ lint:
 	@golangci-lint run ./...
 
 clean:
-	@git clean -fdx ${COVERAGE_FILE} ${LOG_FILE}
+	@git clean -fdx ${COVERAGE_FILE}
 
 ##################################
 #######     Coverage      ########
@@ -38,3 +38,10 @@ coverage: test
 
 coverage_html: test
 	@go tool cover -html ${COVERAGE_FILE}
+
+
+##################################
+#######     Release       ########
+##################################
+release:
+	@bumpversion patch
