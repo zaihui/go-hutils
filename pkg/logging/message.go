@@ -11,6 +11,10 @@ const timeFormatter = "2006-01-02 15:04:05"
 
 var serviceName = utils.GetEnv("SERVICE_NAME", "default")
 
+func SetServiceName(name string) {
+	serviceName = name
+}
+
 type AccessLog struct {
 	ClientIP   string
 	Method     string

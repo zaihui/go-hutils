@@ -13,7 +13,7 @@ import (
 func TestStdoutLog(t *testing.T) {
 	output, err := utils.CaptureStdout(func() {
 		logger := &Logger{}
-		sugarLog := logger.Init(true).Sugar()
+		sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
 		AccessLog{}.Log(sugarLog)
 		RequestLog{}.Log(sugarLog)
 		Error(sugarLog, errors.New("Error"))
@@ -30,10 +30,17 @@ func TestFileLog(t *testing.T) {
 	assert.Equal(t, err, nil)
 	defer os.RemoveAll(path)
 	logger := &Logger{LogPath: path, Type: TRACK}
-	sugarLog := logger.Init(false).Sugar()
+	sugarLog := logger.Init(&LoggerOpt{EnableFile: true}).Sugar()
 	Track(sugarLog, "Track")
 
 	file := path + "/track.log"
 	_, err = os.Stat(file)
 	assert.Equal(t, err, nil)
+}
+
+func TestSetServiceName(t *testing.T) {
+	assert.Equal(t, serviceName, "default")
+	name := "golang"
+	SetServiceName(name)
+	assert.Equal(t, name, serviceName)
 }

@@ -26,16 +26,22 @@ type Logger struct {
 	LogPath string
 }
 
-func (l *Logger) Init(enableStdout bool) (logger *zap.Logger) {
-	var writer io.Writer
-	if enableStdout {
-		writer = os.Stdout
-	} else {
-		writer = l.fileRotateWriter()
+type LoggerOpt struct {
+	EnableStdout bool
+	EnableFile   bool
+}
+
+func (l *Logger) Init(opt *LoggerOpt) (logger *zap.Logger) {
+	writers := []zapcore.WriteSyncer{}
+	if opt.EnableStdout {
+		writers = append(writers, zapcore.AddSync(os.Stdout))
+	}
+	if opt.EnableFile {
+		writers = append(writers, zapcore.AddSync(l.fileRotateWriter()))
 	}
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(l.encoderConfig()),
-		zapcore.AddSync(writer),
+		zapcore.NewMultiWriteSyncer(writers...),
 		zapcore.InfoLevel,
 	)
 	return zap.New(core)
