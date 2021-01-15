@@ -7,7 +7,11 @@ import (
 	"go.uber.org/zap"
 )
 
-const timeFormatter = "2006-01-02 15:04:05"
+const (
+	timeFormatter  = "2006-01-02 15:04:05"
+	defaultLogType = "http"
+	grpcLogType    = "grpc"
+)
 
 var serviceName = utils.GetEnv("SERVICE_NAME", "default")
 
@@ -24,13 +28,21 @@ type AccessLog struct {
 	Duration   int64
 	StatusCode int
 	Payload    []byte
+	Response   []byte
+	LogType    string
+	GrpcStatus string
 }
 
 func (l AccessLog) Log(logger *zap.SugaredLogger) {
 	now := time.Now().Format(timeFormatter)
+	logType := defaultLogType
+	if l.LogType != "" {
+		logType = l.LogType
+	}
 	logger.Infof(
-		"%s %s %s %s $%q$ %s %d %d \"%s\" %s",
-		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol, l.StatusCode, l.Duration, l.Agent, serviceName,
+		"%s %s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s",
+		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
+		l.StatusCode, l.Duration, l.Agent, serviceName, l.Response, logType, l.GrpcStatus,
 	)
 }
 
