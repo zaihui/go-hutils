@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	//nolint:ignore SA1019 Need to keep deprecated package for compatibility.
+	// nolint:staticcheck
+	// ignore SA1019 Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	grpc_logging "github.com/grpc-ecosystem/go-grpc-middleware/logging"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"

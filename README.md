@@ -7,5 +7,5 @@
 ## Installtion
 
 ```bash
-go get github.com/zaihui/go-hutils
+$ go get -u github.com/zaihui/go-hutils
 ```

@@ -3,7 +3,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 	"github.com/stretchr/testify/assert"
 )
 
