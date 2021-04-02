@@ -19,6 +19,7 @@ import (
 
 const (
 	HTTP2Protocol = "HTTP/2"
+	LocalHost     = "127.0.0.1"
 )
 
 func MarshalJSON(msg interface{}) ([]byte, error) {
@@ -38,9 +39,14 @@ func NewUnaryServerAccessLogInterceptor(logger *zap.SugaredLogger) grpc.UnarySer
 		startTime := time.Now()
 		ip, _ := peer.FromContext(ctx)
 		resp, err := handler(ctx, req)
+		clientIP := strings.Split(ip.Addr.String(), ":")[0]
+		// ignore probe requests
+		if clientIP == LocalHost {
+			return resp, err
+		}
 		code := grpc_logging.DefaultErrorToCode(err)
 		l := AccessLog{
-			ClientIP:   strings.Split(ip.Addr.String(), ":")[0],
+			ClientIP:   clientIP,
 			Request:    info.FullMethod,
 			Protocol:   HTTP2Protocol,
 			Duration:   time.Since(startTime).Milliseconds(),

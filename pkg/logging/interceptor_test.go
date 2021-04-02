@@ -1,14 +1,15 @@
 package logging
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
 	grpc_testing "github.com/grpc-ecosystem/go-grpc-middleware/testing"
 	pb_testproto "github.com/grpc-ecosystem/go-grpc-middleware/testing/testproto"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/zaihui/go-hutils/pkg/utils"
 	"google.golang.org/grpc"
 )
 
@@ -18,9 +19,13 @@ var (
 
 type LogTestSuite struct {
 	*grpc_testing.InterceptorTestSuite
+	reader, writer *os.File
 }
 
 func TestLogTestSuite(t *testing.T) {
+	r, w, _ := os.Pipe()
+	// 替换原有os.Stdout
+	os.Stdout = w
 	logger := &Logger{}
 	sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
 	s := &LogTestSuite{
@@ -30,17 +35,28 @@ func TestLogTestSuite(t *testing.T) {
 			},
 		},
 	}
+	s.reader = r
+	s.writer = w
 	suite.Run(t, s)
 }
 
 func (s *LogTestSuite) TestNewUnaryServerAccessLogInterceptor() {
-	output, err := utils.CaptureStdout(func() {
-		_, err := s.Client.Ping(s.SimpleCtx(), goodPing)
-		assert.Equal(s.T(), err, nil)
-	})
-	s.Nil(err)
-	// 输出一行日志
-	s.Equal(len(output), 1)
+	_, err := s.Client.Ping(s.SimpleCtx(), goodPing)
+	s.NoError(err)
+
+	var buf bytes.Buffer
+	output := make(chan string, 1)
+	go func() {
+		io.Copy(&buf, s.reader)
+		output <- buf.String()
+		s.reader.Close()
+	}()
+	s.writer.Close()
+
+	o := strings.Split(<-output, "\n")
+	// 输出空行
+	s.Len(o, 1)
+	s.Equal(o[0], "")
 }
 
 func (s *LogTestSuite) TestMarshalJSON() {
