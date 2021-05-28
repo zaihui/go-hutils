@@ -1,4 +1,4 @@
-package logging
+package hutils
 
 import (
 	"errors"
@@ -7,11 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/zaihui/go-hutils/pkg/utils"
 )
 
 func TestStdoutLog(t *testing.T) {
-	output, err := utils.CaptureStdout(func() {
+	output, err := CaptureStdout(func() {
 		logger := &Logger{}
 		sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
 		AccessLog{}.Log(sugarLog)
