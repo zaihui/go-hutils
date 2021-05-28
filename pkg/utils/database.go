@@ -26,7 +26,7 @@ type BaseMixin struct {
 func (BaseMixin) Fields() []ent.Field {
 	datatime := map[string]string{dialect.MySQL: "datetime"}
 	return []ent.Field{
-		field.String("uid").MaxLen(32).MinLen(32).Unique().Immutable(),
+		field.String("uid").DefaultFunc(NewUUID).MaxLen(32).MinLen(32).Unique().Immutable(),
 		field.Time("created_at").Default(time.Now).Immutable().SchemaType(datatime),
 		field.Time("updated_at").Default(time.Now).SchemaType(datatime).UpdateDefault(time.Now),
 		field.Time("deactivated_at").Optional().Nillable().SchemaType(datatime),
