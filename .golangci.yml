@@ -4,16 +4,16 @@ run:
 
 linters:
   enable:
-    - gofmt
-    - golint
     - bodyclose
     - dupl
     - exportloopref
     - goconst
+    - gofmt
     - goimports
     - goprintffuncname
     - misspell
     - prealloc
+    - revive
     - rowserrcheck
     - unconvert
     - unparam
