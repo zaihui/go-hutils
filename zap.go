@@ -94,12 +94,12 @@ type AccessLog struct {
 	Request    string
 	Protocol   string
 	Agent      string
-	Duration   int64
-	StatusCode int
-	Payload    []byte
-	Response   []byte
 	LogType    string
 	GrpcStatus string
+	Payload    []byte
+	Response   []byte
+	Duration   int64
+	StatusCode int
 }
 
 func (l AccessLog) Log(logger *zap.SugaredLogger) {
@@ -119,9 +119,9 @@ type RequestLog struct {
 	Method            string
 	Request           string
 	StatusDescription string
-	Duration          int64
 	Payload           []byte
 	Response          []byte
+	Duration          int64
 }
 
 func (l RequestLog) Log(logger *zap.SugaredLogger) {

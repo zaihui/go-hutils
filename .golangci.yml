@@ -2,6 +2,10 @@ run:
   timeout: 1m
   tests: false
 
+linters-settings:
+  govet:
+    enable-all: true
+
 linters:
   enable:
     - bodyclose
@@ -11,6 +15,7 @@ linters:
     - gofmt
     - goimports
     - goprintffuncname
+    - govet
     - misspell
     - prealloc
     - revive
