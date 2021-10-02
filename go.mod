@@ -18,7 +18,7 @@ require (
 	github.com/prometheus/procfs v0.1.3 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tebeka/strftime v0.1.5 // indirect
-	go.elastic.co/apm v1.9.0
+	go.elastic.co/apm v1.11.0
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
