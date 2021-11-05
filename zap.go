@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	rotateLogs "github.com/lestrrat-go/file-rotatelogs"
@@ -126,6 +128,18 @@ type RequestLog struct {
 
 func (l RequestLog) Log(logger *zap.SugaredLogger) {
 	now := time.Now().Format(timeFormatter)
+	statusDescriptions := strings.Split(l.StatusDescription, " ")
+	if len(statusDescriptions) > 2 {
+		statusCode, err := strconv.Atoi(statusDescriptions[0])
+		if err != nil {
+			statusDescription := strings.Join(statusDescriptions, "")
+			logger.Infof(
+				"%s %s %d %s $%q$ %d %s $%q$ %s",
+				now, l.Method, l.Duration, l.Request, l.Payload, statusCode, statusDescription, l.Response, serviceName,
+			)
+			return
+		}
+	}
 	logger.Infof(
 		"%s %s %d %s $%q$ %s $%q$ %s",
 		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
