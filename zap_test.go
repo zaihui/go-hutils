@@ -1,10 +1,14 @@
 package hutils
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,4 +46,28 @@ func TestSetServiceName(t *testing.T) {
 	name := "golang"
 	SetServiceName(name)
 	assert.Equal(t, name, serviceName)
+}
+
+func TestStdoutLogWithContext(t *testing.T) {
+	traceID, err := trace.TraceIDFromHex("744ba40615ac6737263c10f1255eac36")
+	assert.NoError(t, err)
+	spanID, err := trace.SpanIDFromHex("a221978841e89dac")
+	assert.NoError(t, err)
+	spanCtx := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: traceID,
+		SpanID:  spanID,
+	})
+	ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
+	output, err := CaptureStdout(func() {
+		logger := &Logger{}
+		sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
+		AccessLog{}.LogWithContext(ctx, sugarLog)
+		RequestLog{}.LogWithContext(context.Background(), sugarLog)
+	})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(output), 3)
+	assert.True(t, strings.Index(output[0], traceID.String()) > 0)
+	assert.True(t, strings.Index(output[0], spanID.String()) > 0)
+	assert.True(t, strings.Index(output[1], traceID.String()) == -1)
+	assert.True(t, strings.Index(output[1], spanID.String()) == -1)
 }

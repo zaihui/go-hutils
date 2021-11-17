@@ -1,11 +1,14 @@
 package hutils
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	rotateLogs "github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
@@ -88,6 +91,22 @@ func (l *Logger) filePath() string {
 	return fmt.Sprintf("%s/%s.log", l.LogPath, l.Type)
 }
 
+func SpanIDFromContext(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.HasSpanID() {
+		return spanCtx.SpanID().String()
+	}
+	return ""
+}
+
+func TraceIDFromContext(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.HasTraceID() {
+		return spanCtx.TraceID().String()
+	}
+	return ""
+}
+
 type AccessLog struct {
 	ClientIP   string
 	Method     string
@@ -115,6 +134,20 @@ func (l AccessLog) Log(logger *zap.SugaredLogger) {
 	)
 }
 
+func (l AccessLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogger) {
+	now := time.Now().Format(timeFormatter)
+	logType := defaultLogType
+	if l.LogType != "" {
+		logType = l.LogType
+	}
+	logger.Infof(
+		"%s %s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s %s %s",
+		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
+		l.StatusCode, l.Duration, l.Agent, serviceName, l.Response, logType, l.GrpcStatus,
+		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
+	)
+}
+
 type RequestLog struct {
 	Method            string
 	Request           string
@@ -129,6 +162,15 @@ func (l RequestLog) Log(logger *zap.SugaredLogger) {
 	logger.Infof(
 		"%s %s %d %s $%q$ %s $%q$ %s",
 		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
+	)
+}
+
+func (l RequestLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogger) {
+	now := time.Now().Format(timeFormatter)
+	logger.Infof(
+		"%s %s %d %s $%q$ %s $%q$ %s %s %s",
+		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
+		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
 	)
 }
 
