@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,7 @@ import (
 func TestStdoutLog(t *testing.T) {
 	output, err := CaptureStdout(func() {
 		logger := &Logger{}
-		sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
+		sugarLog := logger.Init(LoggerOpt{EnableStdout: true}).Sugar()
 		AccessLog{}.Log(sugarLog)
 		RequestLog{}.Log(sugarLog)
 		Error(sugarLog, errors.New("Error"))
@@ -33,12 +34,39 @@ func TestFileLog(t *testing.T) {
 	assert.Equal(t, err, nil)
 	defer os.RemoveAll(path)
 	logger := &Logger{LogPath: path, Type: TRACK}
-	sugarLog := logger.Init(&LoggerOpt{EnableFile: true}).Sugar()
+	sugarLog := logger.Init(LoggerOpt{EnableFile: true}).Sugar()
 	Track(sugarLog, "Track")
 
 	file := path + "/track.log"
 	_, err = os.Stat(file)
 	assert.Equal(t, err, nil)
+}
+
+func TestCustomeEncoderConfig(t *testing.T) {
+	output, err := CaptureStdout(func() {
+		logger := &Logger{Type: ERROR}
+		sugarLog := logger.Init(LoggerOpt{EnableStdout: true}).Sugar()
+		sugarLog.Error("test")
+	})
+	assert.Equal(t, err, nil)
+	// service_name level date time path func message
+	assert.Equal(t, strings.Split(output[0], " ")[6], "test")
+
+	output, err = CaptureStdout(func() {
+		logger := &Logger{Type: ERROR}
+		sugarLog := logger.Init(LoggerOpt{
+			EnableStdout: true,
+			CustomEncoderConfig: &zapcore.EncoderConfig{
+				LevelKey:         "level",
+				MessageKey:       "message",
+				EncodeLevel:      zapcore.CapitalLevelEncoder,
+				ConsoleSeparator: "\t",
+			},
+		}).Sugar()
+		sugarLog.Info("test")
+	})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, output[0], "INFO\ttest")
 }
 
 func TestSetServiceName(t *testing.T) {
@@ -60,7 +88,7 @@ func TestStdoutLogWithContext(t *testing.T) {
 	ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
 	output, err := CaptureStdout(func() {
 		logger := &Logger{}
-		sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
+		sugarLog := logger.Init(LoggerOpt{EnableStdout: true}).Sugar()
 		AccessLog{}.LogWithContext(ctx, sugarLog)
 		RequestLog{}.LogWithContext(context.Background(), sugarLog)
 	})

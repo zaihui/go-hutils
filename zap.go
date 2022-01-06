@@ -42,11 +42,12 @@ type Logger struct {
 }
 
 type LoggerOpt struct {
-	EnableStdout bool
-	EnableFile   bool
+	CustomEncoderConfig *zapcore.EncoderConfig
+	EnableStdout        bool
+	EnableFile          bool
 }
 
-func (l *Logger) Init(opt *LoggerOpt) (logger *zap.Logger) {
+func (l *Logger) Init(opt LoggerOpt) (logger *zap.Logger) {
 	writers := []zapcore.WriteSyncer{}
 	if opt.EnableStdout {
 		writers = append(writers, zapcore.AddSync(os.Stdout))
@@ -54,23 +55,24 @@ func (l *Logger) Init(opt *LoggerOpt) (logger *zap.Logger) {
 	if opt.EnableFile {
 		writers = append(writers, zapcore.AddSync(l.fileRotateWriter()))
 	}
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(l.encoderConfig()),
-		zapcore.NewMultiWriteSyncer(writers...),
-		zapcore.InfoLevel,
-	)
-	return zap.New(core)
-}
-
-func (l *Logger) encoderConfig() zapcore.EncoderConfig {
-	return zapcore.EncoderConfig{
-		CallerKey:      "file",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.FullCallerEncoder,
+	var enc zapcore.EncoderConfig
+	switch l.Type {
+	case ERROR:
+		enc = ErrorEncoderConfig()
+	case TRACK:
+		enc = TrackEncoderConfig()
+	default:
+		enc = DefaultEncoderConfig()
 	}
+	if opt.CustomEncoderConfig != nil {
+		enc = *opt.CustomEncoderConfig
+	}
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(enc),
+		zapcore.NewMultiWriteSyncer(writers...),
+		zap.NewAtomicLevelAt(zapcore.InfoLevel),
+	)
+	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 }
 
 func (l *Logger) fileRotateWriter() io.Writer {
@@ -89,6 +91,53 @@ func (l *Logger) fileRotateWriter() io.Writer {
 
 func (l *Logger) filePath() string {
 	return fmt.Sprintf("%s/%s.log", l.LogPath, l.Type)
+}
+
+func DefaultEncoderConfig() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
+		TimeKey:          "time",
+		MessageKey:       "msg",
+		ConsoleSeparator: " ",
+		LineEnding:       zapcore.DefaultLineEnding,
+		EncodeTime:       zapcore.TimeEncoderOfLayout(timeFormatter),
+	}
+}
+
+func ErrorEncoderConfig() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
+		TimeKey:          "time",
+		CallerKey:        "path",
+		FunctionKey:      "func",
+		MessageKey:       "msg",
+		StacktraceKey:    "stacktrace",
+		ConsoleSeparator: " ",
+		LineEnding:       zapcore.DefaultLineEnding,
+		EncodeDuration:   zapcore.StringDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(serviceName)
+			enc.AppendString(zapcore.ErrorLevel.CapitalString())
+			enc.AppendString(t.Format(timeFormatter))
+		},
+	}
+}
+
+func TrackEncoderConfig() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
+		TimeKey:          "time",
+		FunctionKey:      "func",
+		MessageKey:       "msg",
+		ConsoleSeparator: " ",
+		LineEnding:       zapcore.DefaultLineEnding,
+		EncodeDuration:   zapcore.StringDurationEncoder,
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(serviceName)
+			enc.AppendString(zapcore.InfoLevel.CapitalString())
+			enc.AppendString(t.Format(timeFormatter))
+		},
+	}
 }
 
 func SpanIDFromContext(ctx context.Context) string {
@@ -122,27 +171,25 @@ type AccessLog struct {
 }
 
 func (l AccessLog) Log(logger *zap.SugaredLogger) {
-	now := time.Now().Format(timeFormatter)
 	logType := defaultLogType
 	if l.LogType != "" {
 		logType = l.LogType
 	}
 	logger.Infof(
 		"%s %s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s",
-		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
+		l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
 		l.StatusCode, l.Duration, l.Agent, serviceName, l.Response, logType, l.GrpcStatus,
 	)
 }
 
 func (l AccessLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogger) {
-	now := time.Now().Format(timeFormatter)
 	logType := defaultLogType
 	if l.LogType != "" {
 		logType = l.LogType
 	}
 	logger.Infof(
-		"%s %s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s %s %s",
-		now, l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
+		"%s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s %s %s",
+		l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
 		l.StatusCode, l.Duration, l.Agent, serviceName, l.Response, logType, l.GrpcStatus,
 		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
 	)
@@ -158,28 +205,24 @@ type RequestLog struct {
 }
 
 func (l RequestLog) Log(logger *zap.SugaredLogger) {
-	now := time.Now().Format(timeFormatter)
 	logger.Infof(
 		"%s %s %d %s $%q$ %s $%q$ %s",
-		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
+		l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
 	)
 }
 
 func (l RequestLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogger) {
-	now := time.Now().Format(timeFormatter)
 	logger.Infof(
-		"%s %s %d %s $%q$ %s $%q$ %s %s %s",
-		now, l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
+		"%s %d %s $%q$ %s $%q$ %s %s %s",
+		l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
 		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
 	)
 }
 
 func Error(logger *zap.SugaredLogger, err error) {
-	now := time.Now().Format(timeFormatter)
-	logger.Errorf("%s ERROR %s %+v", serviceName, now, err)
+	logger.Errorf("%v", err)
 }
 
 func Track(logger *zap.SugaredLogger, message interface{}) {
-	now := time.Now().Format(timeFormatter)
-	logger.Infof("%s INFO %s %s", serviceName, now, message)
+	logger.Infof("%s", message)
 }

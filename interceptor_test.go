@@ -27,7 +27,7 @@ func TestLogTestSuite(t *testing.T) {
 	// 替换原有os.Stdout
 	os.Stdout = w
 	logger := &Logger{}
-	sugarLog := logger.Init(&LoggerOpt{EnableStdout: true}).Sugar()
+	sugarLog := logger.Init(LoggerOpt{EnableStdout: true}).Sugar()
 	s := &LogTestSuite{
 		InterceptorTestSuite: &grpc_testing.InterceptorTestSuite{
 			ServerOpts: []grpc.ServerOption{
