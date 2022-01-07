@@ -10,8 +10,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/stretchr/testify v1.7.0
 	go.elastic.co/apm v1.11.0
-	go.opentelemetry.io/otel v1.2.0
-	go.opentelemetry.io/otel/trace v1.2.0
+	go.opentelemetry.io/otel/trace v0.20.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.35.0
 )
@@ -33,6 +32,8 @@ require (
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
 	github.com/tebeka/strftime v0.1.5 // indirect
 	go.elastic.co/fastjson v1.1.0 // indirect
+	go.opentelemetry.io/otel v0.20.0 // indirect
+	go.opentelemetry.io/otel/metric v0.20.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
