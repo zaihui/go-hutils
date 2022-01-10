@@ -176,7 +176,7 @@ func (l AccessLog) Log(logger *zap.SugaredLogger) {
 		logType = l.LogType
 	}
 	logger.Infof(
-		"%s %s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s",
+		"%s %s %s $%q$ %s %d %d \"%s\" %s $%q$ %s %s",
 		l.ClientIP, l.Method, l.Request, l.Payload, l.Protocol,
 		l.StatusCode, l.Duration, l.Agent, serviceName, l.Response, logType, l.GrpcStatus,
 	)
