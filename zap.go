@@ -8,9 +8,8 @@ import (
 	"os"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
-
 	rotateLogs "github.com/lestrrat-go/file-rotatelogs"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -34,6 +33,7 @@ const (
 	REQUEST LogType = "request"
 	TRACK   LogType = "track"
 	ERROR   LogType = "error"
+	UNION   LogType = "union"
 )
 
 type Logger struct {
@@ -42,37 +42,64 @@ type Logger struct {
 }
 
 type LoggerOpt struct {
-	CustomEncoderConfig *zapcore.EncoderConfig
-	EnableStdout        bool
-	EnableFile          bool
+	CustomEncoderConfig  *zapcore.EncoderConfig
+	CustomEncoderConfigs map[zapcore.Level]*zapcore.EncoderConfig
+	EnableStdout         bool
+	EnableFile           bool
+	IsUnion              bool
 }
 
 func (l *Logger) Init(opt LoggerOpt) (logger *zap.Logger) {
-	writers := []zapcore.WriteSyncer{}
+	var writers []zapcore.WriteSyncer
 	if opt.EnableStdout {
 		writers = append(writers, zapcore.AddSync(os.Stdout))
 	}
 	if opt.EnableFile {
 		writers = append(writers, zapcore.AddSync(l.fileRotateWriter()))
 	}
-	var enc zapcore.EncoderConfig
-	switch l.Type {
-	case ERROR:
-		enc = ErrorEncoderConfig()
-	case TRACK:
-		enc = TrackEncoderConfig()
-	default:
-		enc = DefaultEncoderConfig()
+	var core zapcore.Core
+	if opt.IsUnion {
+		encoderMap := make(map[zapcore.Level]zapcore.EncoderConfig)
+		encoderMap[zapcore.ErrorLevel] = DefaultEncoderConfig(true)
+		encoderMap[zapcore.InfoLevel] = DefaultEncoderConfig(false)
+		encoderMap[zapcore.DebugLevel] = DefaultEncoderConfig(false)
+		for level, encoder := range opt.CustomEncoderConfigs {
+			encoderMap[level] = *encoder
+		}
+		cores := make([]zapcore.Core, len(encoderMap))
+		i := 0
+		for key, encoder := range encoderMap {
+			level := key
+			cores[i] = zapcore.NewCore(
+				zapcore.NewConsoleEncoder(encoder),
+				zapcore.NewMultiWriteSyncer(writers...),
+				zap.LevelEnablerFunc(func(lev zapcore.Level) bool {
+					return lev == level
+				}),
+			)
+			i++
+		}
+		core = zapcore.NewTee(cores...)
+	} else {
+		var enc zapcore.EncoderConfig
+		switch l.Type {
+		case ERROR:
+			enc = DefaultEncoderConfig(true)
+		case TRACK:
+			enc = TrackEncoderConfig()
+		default:
+			enc = DefaultEncoderConfig(false)
+		}
+		if opt.CustomEncoderConfig != nil {
+			enc = *opt.CustomEncoderConfig
+		}
+		core = zapcore.NewCore(
+			zapcore.NewConsoleEncoder(enc),
+			zapcore.NewMultiWriteSyncer(writers...),
+			zap.NewAtomicLevelAt(zapcore.InfoLevel),
+		)
 	}
-	if opt.CustomEncoderConfig != nil {
-		enc = *opt.CustomEncoderConfig
-	}
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(enc),
-		zapcore.NewMultiWriteSyncer(writers...),
-		zap.NewAtomicLevelAt(zapcore.InfoLevel),
-	)
-	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)).Named(serviceName)
 }
 
 func (l *Logger) fileRotateWriter() io.Writer {
@@ -93,34 +120,27 @@ func (l *Logger) filePath() string {
 	return fmt.Sprintf("%s/%s.log", l.LogPath, l.Type)
 }
 
-func DefaultEncoderConfig() zapcore.EncoderConfig {
-	return zapcore.EncoderConfig{
-		TimeKey:          "time",
-		MessageKey:       "msg",
-		ConsoleSeparator: " ",
-		LineEnding:       zapcore.DefaultLineEnding,
-		EncodeTime:       zapcore.TimeEncoderOfLayout(timeFormatter),
-	}
-}
-
-func ErrorEncoderConfig() zapcore.EncoderConfig {
-	return zapcore.EncoderConfig{
+func DefaultEncoderConfig(WithStack bool) zapcore.EncoderConfig {
+	config := zapcore.EncoderConfig{
+		NameKey:          "name",
+		LevelKey:         "level",
 		TimeKey:          "time",
 		CallerKey:        "path",
 		FunctionKey:      "func",
 		MessageKey:       "msg",
-		StacktraceKey:    "stacktrace",
 		ConsoleSeparator: " ",
 		LineEnding:       zapcore.DefaultLineEnding,
-		EncodeDuration:   zapcore.StringDurationEncoder,
 		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeDuration:   zapcore.StringDurationEncoder,
 		EncodeLevel:      zapcore.CapitalLevelEncoder,
-		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-			enc.AppendString(serviceName)
-			enc.AppendString(zapcore.ErrorLevel.CapitalString())
-			enc.AppendString(t.Format(timeFormatter))
-		},
+		EncodeName:       zapcore.FullNameEncoder,
+		EncodeTime:       zapcore.TimeEncoderOfLayout(timeFormatter),
 	}
+	if WithStack {
+		config.StacktraceKey = "stacktrace"
+		config.LineEnding = "$" + zapcore.DefaultLineEnding
+	}
+	return config
 }
 
 func TrackEncoderConfig() zapcore.EncoderConfig {
@@ -217,6 +237,43 @@ func (l RequestLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogge
 		l.Method, l.Duration, l.Request, l.Payload, l.StatusDescription, l.Response, serviceName,
 		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
 	)
+}
+
+type UnionLog struct {
+	Level             string
+	ClientIP          string
+	Protocol          string
+	Agent             string
+	Method            string
+	Request           string
+	StatusDescription string
+	LogType           string
+	GrpcStatus        string
+	Payload           []byte
+	Response          []byte
+	Duration          int64
+	StatusCode        int
+}
+
+func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
+	logType := defaultLogType
+	if l.LogType != "" {
+		logType = l.LogType
+	}
+	logger.Infof(
+		"%s %s %d $%q$ %s %s %d \"%s\" $%q$ %s %s %s %s",
+		l.ClientIP, l.Method, l.Duration, l.Request, l.Payload, l.Protocol,
+		l.StatusCode, l.Agent, l.Response, logType, l.GrpcStatus,
+		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
+	)
+}
+
+func (l UnionLog) Error(ctx context.Context, logger *zap.SugaredLogger, err error) {
+	logger.Errorf("%s %s %+v", TraceIDFromContext(ctx), SpanIDFromContext(ctx), err)
+}
+
+func (l UnionLog) Track(ctx context.Context, logger *zap.SugaredLogger, msg interface{}) {
+	logger.Debugf("%s %s %+v", TraceIDFromContext(ctx), SpanIDFromContext(ctx), msg)
 }
 
 func Error(logger *zap.SugaredLogger, err error) {
