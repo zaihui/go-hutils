@@ -47,6 +47,7 @@ type LoggerOpt struct {
 	EnableStdout         bool
 	EnableFile           bool
 	IsUnion              bool
+	IsJSONEncoder        bool
 }
 
 func (l *Logger) Init(opt LoggerOpt) (logger *zap.Logger) {
@@ -68,10 +69,14 @@ func (l *Logger) Init(opt LoggerOpt) (logger *zap.Logger) {
 		}
 		cores := make([]zapcore.Core, len(encoderMap))
 		i := 0
-		for key, encoder := range encoderMap {
+		for key, encoderConfig := range encoderMap {
 			level := key
+			encoder := zapcore.NewConsoleEncoder(encoderConfig)
+			if opt.IsJSONEncoder {
+				encoder = zapcore.NewJSONEncoder(encoderConfig)
+			}
 			cores[i] = zapcore.NewCore(
-				zapcore.NewConsoleEncoder(encoder),
+				encoder,
 				zapcore.NewMultiWriteSyncer(writers...),
 				zap.LevelEnablerFunc(func(lev zapcore.Level) bool {
 					return lev == level
@@ -240,19 +245,17 @@ func (l RequestLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogge
 }
 
 type UnionLog struct {
-	Level             string
-	ClientIP          string
-	Protocol          string
-	Agent             string
-	Method            string
-	Request           string
-	StatusDescription string
-	LogType           string
-	GrpcStatus        string
-	Payload           []byte
-	Response          []byte
-	Duration          int64
-	StatusCode        int
+	ClientIP   string
+	Protocol   string
+	Agent      string
+	Method     string
+	Request    string
+	LogType    string
+	GrpcStatus string
+	Payload    []byte
+	Response   []byte
+	Duration   int64
+	StatusCode int
 }
 
 func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
@@ -260,20 +263,36 @@ func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
 	if l.LogType != "" {
 		logType = l.LogType
 	}
-	logger.Infof(
-		"%s %s %d $%q$ %s %s %d \"%s\" $%q$ %s %s %s %s",
-		l.ClientIP, l.Method, l.Duration, l.Request, l.Payload, l.Protocol,
-		l.StatusCode, l.Agent, l.Response, logType, l.GrpcStatus,
-		TraceIDFromContext(ctx), SpanIDFromContext(ctx),
+	logger.Infow("",
+		zap.String("client_ip", l.ClientIP),
+		zap.String("protocol", l.Protocol),
+		zap.String("agent", l.Agent),
+		zap.String("method", l.Method),
+		zap.String("request", l.Request),
+		zap.Binary("payload", l.Payload),
+		zap.Binary("response", l.Response),
+		zap.Int64("duration", l.Duration),
+		zap.Int("status_code", l.StatusCode),
+		zap.String("log_type", logType),
+		zap.String("grpc_status", l.GrpcStatus),
+		zap.String("trace_id", TraceIDFromContext(ctx)),
+		zap.String("span_id", SpanIDFromContext(ctx)),
 	)
 }
 
 func (l UnionLog) Error(ctx context.Context, logger *zap.SugaredLogger, err error) {
-	logger.Errorf("%s %s %+v", TraceIDFromContext(ctx), SpanIDFromContext(ctx), err)
+	logger.Errorw(
+		err.Error(),
+		zap.String("trace_id", TraceIDFromContext(ctx)),
+		zap.String("span_id", SpanIDFromContext(ctx)),
+	)
 }
 
 func (l UnionLog) Track(ctx context.Context, logger *zap.SugaredLogger, msg interface{}) {
-	logger.Debugf("%s %s %+v", TraceIDFromContext(ctx), SpanIDFromContext(ctx), msg)
+	logger.Debugw(fmt.Sprintf("%+v", msg),
+		zap.String("trace_id", TraceIDFromContext(ctx)),
+		zap.String("span_id", SpanIDFromContext(ctx)),
+	)
 }
 
 func Error(logger *zap.SugaredLogger, err error) {
