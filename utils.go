@@ -70,9 +70,9 @@ type ZError struct {
 	SpanID  string
 }
 
-func NewZError(ctx context.Context, code, message string) *ZError {
+func NewZError(ctx context.Context, code interface{}, message string) *ZError {
 	return &ZError{
-		Code:    code,
+		Code:    fmt.Sprintf("%v", code),
 		Message: message,
 		TraceID: TraceIDFromContext(ctx),
 		SpanID:  SpanIDFromContext(ctx),
