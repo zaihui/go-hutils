@@ -44,3 +44,8 @@ func TestNewApm(t *testing.T) {
 	span := NewApmSpan(context.Background(), "TestApm", "test")
 	assert.NotEqual(t, span, nil)
 }
+
+func TestNewZError(t *testing.T) {
+	err := NewZError(nil, "10086", "TestNewZError")
+	assert.Equal(t, "10086: TestNewZError", err.Error())
+}
