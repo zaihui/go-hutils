@@ -2,8 +2,10 @@ package hutils
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -59,4 +61,24 @@ func CaptureStdout(f func()) ([]string, error) {
 	os.Stdout = stdout
 	w.Close()
 	return strings.Split(<-output, "\n"), <-errs
+}
+
+type ZError struct {
+	Code    string
+	Message string
+	TraceID string
+	SpanID  string
+}
+
+func NewZError(ctx context.Context, code, message string) *ZError {
+	return &ZError{
+		Code:    code,
+		Message: message,
+		TraceID: TraceIDFromContext(ctx),
+		SpanID:  SpanIDFromContext(ctx),
+	}
+}
+
+func (z ZError) Error() string {
+	return fmt.Sprintf("%s: %s", z.Code, z.Message)
 }
