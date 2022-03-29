@@ -48,4 +48,6 @@ func TestNewApm(t *testing.T) {
 func TestNewZError(t *testing.T) {
 	err := NewZError(nil, "10086", "TestNewZError")
 	assert.Equal(t, "10086: TestNewZError", err.Error())
+	err = NewZError(nil, "10087", "TestNewZError", WithError(err))
+	assert.Equal(t, "10086: TestNewZError", err.Err.Error())
 }

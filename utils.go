@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
-	"os"
-
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 // JSONMarshal 类似json.Marshal(), 但不转义特殊符号
@@ -63,20 +63,35 @@ func CaptureStdout(f func()) ([]string, error) {
 	return strings.Split(<-output, "\n"), <-errs
 }
 
+// ZError
+// nolint: govet // may be we need err stack
 type ZError struct {
 	Code    string
 	Message string
 	TraceID string
 	SpanID  string
+	Err     error
 }
 
-func NewZError(ctx context.Context, code interface{}, message string) *ZError {
-	return &ZError{
+type ZErrorOption func(*ZError)
+
+func WithError(err error) ZErrorOption {
+	return func(z *ZError) {
+		z.Err = errors.WithStack(err)
+	}
+}
+
+func NewZError(ctx context.Context, code interface{}, message string, options ...ZErrorOption) *ZError {
+	z := &ZError{
 		Code:    fmt.Sprintf("%v", code),
 		Message: message,
 		TraceID: TraceIDFromContext(ctx),
 		SpanID:  SpanIDFromContext(ctx),
 	}
+	for _, option := range options {
+		option(z)
+	}
+	return z
 }
 
 func (z ZError) Error() string {
