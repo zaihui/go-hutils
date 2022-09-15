@@ -1,4 +1,4 @@
-VERSION=0.0.19
+VERSION=0.0.20
 COVERAGE_FILE=.coverage
 
 ##################################
