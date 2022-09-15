@@ -277,6 +277,7 @@ func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
 		zap.String("grpc_status", l.GrpcStatus),
 		zap.String("trace_id", TraceIDFromContext(ctx)),
 		zap.String("span_id", SpanIDFromContext(ctx)),
+		zap.String("name", serviceName),
 	)
 }
 
@@ -293,6 +294,14 @@ func (l UnionLog) Track(ctx context.Context, logger *zap.SugaredLogger, msg inte
 		zap.String("trace_id", TraceIDFromContext(ctx)),
 		zap.String("span_id", SpanIDFromContext(ctx)),
 	)
+}
+
+func (l UnionLog) Errorf(ctx context.Context, logger *zap.SugaredLogger, template string, args ...interface{}) {
+	l.Error(ctx, logger, fmt.Errorf(template, args...))
+}
+
+func (l UnionLog) Trackf(ctx context.Context, logger *zap.SugaredLogger, template string, args ...interface{}) {
+	l.Track(ctx, logger, fmt.Sprintf(template, args...))
 }
 
 func Error(logger *zap.SugaredLogger, err error) {
