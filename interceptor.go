@@ -45,7 +45,7 @@ func NewUnaryServerAccessLogInterceptor(logger *zap.SugaredLogger) grpc.UnarySer
 			return resp, err
 		}
 		code := grpc_logging.DefaultErrorToCode(err)
-		l := AccessLog{
+		l := UnionLog{
 			ClientIP:   clientIP,
 			Request:    info.FullMethod,
 			Protocol:   HTTP2Protocol,
@@ -59,7 +59,7 @@ func NewUnaryServerAccessLogInterceptor(logger *zap.SugaredLogger) grpc.UnarySer
 		if msg, ok := resp.(proto.Message); ok {
 			l.Response, _ = MarshalJSON(msg)
 		}
-		l.Log(logger)
+		l.Log(ctx, logger)
 		return resp, err
 	}
 }

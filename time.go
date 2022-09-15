@@ -12,17 +12,17 @@ const (
 	DateTimeLayout = "2006-01-02T15:04:05"
 )
 
-// Date time.Date的快捷方法，省略sec，nsec，loc.
+// Time time.Date的快捷方法，省略sec，nsec，loc.
 func Time(year int, month time.Month, day, hour, min int) time.Time {
 	return time.Date(year, month, day, hour, min, 0, 0, time.Local)
 }
 
-// DefaultTimeParse 默认时间解析.
+// DefaultParseTime 默认时间解析.
 func DefaultParseTime(value string) (time.Time, error) {
 	return ParseTime(DateTimeLayout, value)
 }
 
-// TimeParse 当地时区解析时间字符串.
+// ParseTime 当地时区解析时间字符串.
 func ParseTime(layout string, value string) (time.Time, error) {
 	return time.ParseInLocation(layout, value, time.Local)
 }
@@ -32,7 +32,7 @@ type Period struct {
 	Start, End time.Time
 }
 
-// ParseTimePeriod 解析时间区间.
+// ParseDateTimePeriod 解析时间区间.
 func ParseDateTimePeriod(start, end string) (*Period, error) {
 	if start == "" || end == "" {
 		return nil, errors.New("查询区间不能为空")
