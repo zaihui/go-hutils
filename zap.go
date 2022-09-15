@@ -277,7 +277,6 @@ func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
 		zap.String("grpc_status", l.GrpcStatus),
 		zap.String("trace_id", TraceIDFromContext(ctx)),
 		zap.String("span_id", SpanIDFromContext(ctx)),
-		zap.String("name", serviceName),
 	)
 }
 
