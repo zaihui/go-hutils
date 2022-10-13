@@ -63,6 +63,12 @@ func CaptureStdout(f func()) ([]string, error) {
 	return strings.Split(<-output, "\n"), <-errs
 }
 
+type CodeError interface {
+	Error() string
+	ErrCode() string
+	ErrMessage() string
+}
+
 // ZError
 // nolint: govet // may be we need err stack
 type ZError struct {
@@ -96,4 +102,12 @@ func NewZError(ctx context.Context, code interface{}, message string, options ..
 
 func (z ZError) Error() string {
 	return fmt.Sprintf("%s: %s", z.Code, z.Message)
+}
+
+func (z ZError) ErrCode() string {
+	return z.Code
+}
+
+func (z ZError) ErrMessage() string {
+	return z.Message
 }
