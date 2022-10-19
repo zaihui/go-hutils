@@ -244,18 +244,34 @@ func (l RequestLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogge
 	)
 }
 
+type GetExtraField func(ctx context.Context) string
+
 type UnionLog struct {
-	ClientIP   string
-	Protocol   string
-	Agent      string
-	Method     string
-	Request    string
-	LogType    string
-	GrpcStatus string
-	Payload    []byte
-	Response   []byte
-	Duration   int64
-	StatusCode int
+	ClientIP    string
+	Protocol    string
+	Agent       string
+	Method      string
+	Request     string
+	LogType     string
+	GrpcStatus  string
+	Payload     []byte
+	Response    []byte
+	Duration    int64
+	StatusCode  int
+	ExtraFields map[string]GetExtraField
+}
+
+func (l UnionLog) GetExtraFields(ctx context.Context, baseInfo []interface{}) []interface{} {
+	values := make([]interface{}, len(l.ExtraFields))
+	i := 0
+	for k, f := range l.ExtraFields {
+		values[i] = zap.String(k, f(ctx))
+		i++
+	}
+	if baseInfo != nil {
+		values = append(values, baseInfo...)
+	}
+	return values
 }
 
 func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
@@ -263,7 +279,7 @@ func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
 	if l.LogType != "" {
 		logType = l.LogType
 	}
-	logger.Infow("",
+	baseInfo := []interface{}{
 		zap.String("client_ip", l.ClientIP),
 		zap.String("protocol", l.Protocol),
 		zap.String("agent", l.Agent),
@@ -274,25 +290,19 @@ func (l UnionLog) Log(ctx context.Context, logger *zap.SugaredLogger) {
 		zap.Int64("duration", l.Duration),
 		zap.Int("status_code", l.StatusCode),
 		zap.String("log_type", logType),
-		zap.String("grpc_status", l.GrpcStatus),
-		zap.String("trace_id", TraceIDFromContext(ctx)),
-		zap.String("span_id", SpanIDFromContext(ctx)),
-	)
+		zap.String("grpc_status", l.GrpcStatus)}
+	values := l.GetExtraFields(ctx, baseInfo)
+	logger.Infow("", values...)
 }
 
 func (l UnionLog) Error(ctx context.Context, logger *zap.SugaredLogger, err error) {
-	logger.Errorw(
-		err.Error(),
-		zap.String("trace_id", TraceIDFromContext(ctx)),
-		zap.String("span_id", SpanIDFromContext(ctx)),
-	)
+	values := l.GetExtraFields(ctx, nil)
+	logger.Errorw(err.Error(), values...)
 }
 
 func (l UnionLog) Track(ctx context.Context, logger *zap.SugaredLogger, msg interface{}) {
-	logger.Debugw(fmt.Sprintf("%+v", msg),
-		zap.String("trace_id", TraceIDFromContext(ctx)),
-		zap.String("span_id", SpanIDFromContext(ctx)),
-	)
+	values := l.GetExtraFields(ctx, nil)
+	logger.Debugw(fmt.Sprintf("%+v", msg), values...)
 }
 
 func (l UnionLog) Errorf(ctx context.Context, logger *zap.SugaredLogger, template string, args ...interface{}) {
