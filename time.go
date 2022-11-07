@@ -10,6 +10,10 @@ const (
 	DateLayout = "2006-01-02"
 	// DateTimeLayout 时间序列化
 	DateTimeLayout = "2006-01-02T15:04:05"
+	// DateTimeLayoutWithoutT 没有T的时间序列化
+	DateTimeLayoutWithoutT = "2006-01-02 15:04:05"
+	// DateTimeLayoutChinese 中文时间序列化
+	DateTimeLayoutChinese = "2006年01月02日 15时04分05秒"
 )
 
 // Time time.Date的快捷方法，省略sec，nsec，loc.
@@ -56,4 +60,43 @@ func Tomorrow() time.Time {
 // Yesterday 昨天同一时间.
 func Yesterday() time.Time {
 	return time.Now().AddDate(0, 0, -1)
+}
+
+// GetDayStartAndLatest 获取某天的开始和结束.
+func GetDayStartAndLatest(day time.Time) (time.Time, time.Time) {
+	beginAt := Time(day.Year(), day.Month(), day.Day(), 0, 0)
+	endAt := time.Date(day.Year(), day.Month(), day.Day(), 23, 59, 59, 59, time.Local)
+	return beginAt, endAt
+}
+
+// DiffDay 两个时间差多少天.
+func DiffDay(t1, t2 time.Time) int {
+	var (
+		begin time.Time
+		end   time.Time
+	)
+	if t1.After(t2) {
+		begin = t2
+		end = t1
+	} else {
+		begin = t1
+		end = t2
+	}
+	return int(end.Sub(begin).Hours() / 24)
+}
+
+// DiffDayWithLayout 两个时间差多少天.
+func DiffDayWithLayout(t1, t2 string, layout string) (int, error) {
+	if t1 == "" || t2 == "" {
+		return 0, errors.New("查询区间不能为空")
+	}
+	t1T, err := ParseTime(layout, t1)
+	if err != nil {
+		return 0, errors.New("时间解析失败")
+	}
+	t2T, err := ParseTime(DateTimeLayout, t2)
+	if err != nil {
+		return 0, errors.New("时间解析失败")
+	}
+	return DiffDay(t1T, t2T), nil
 }
