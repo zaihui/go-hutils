@@ -31,7 +31,7 @@ func TestLogTestSuite(t *testing.T) {
 	s := &LogTestSuite{
 		InterceptorTestSuite: &grpc_testing.InterceptorTestSuite{
 			ServerOpts: []grpc.ServerOption{
-				grpc.UnaryInterceptor(NewUnaryServerAccessLogInterceptor(sugarLog)),
+				grpc.UnaryInterceptor(NewUnaryServerAccessLogInterceptor(sugarLog, nil)),
 			},
 		},
 	}

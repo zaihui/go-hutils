@@ -247,18 +247,18 @@ func (l RequestLog) LogWithContext(ctx context.Context, logger *zap.SugaredLogge
 type GetExtraField func(ctx context.Context) string
 
 type UnionLog struct {
+	ExtraFields map[string]GetExtraField
 	ClientIP    string
 	Protocol    string
 	Agent       string
 	Method      string
 	Request     string
-	LogType     string
 	GrpcStatus  string
+	LogType     string
 	Payload     []byte
 	Response    []byte
 	Duration    int64
 	StatusCode  int
-	ExtraFields map[string]GetExtraField
 }
 
 func (l UnionLog) GetExtraFields(ctx context.Context, baseInfo []interface{}) []interface{} {

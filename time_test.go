@@ -31,6 +31,34 @@ func TestParseTimePeriod(t *testing.T) {
 	assert.Equal(t, Time(2021, 10, 7, 20, 0), period.End)
 }
 
+func TestGetDayStartAndLatest(t *testing.T) {
+	now := time.Now()
+	start, end := GetDayStartAndLatest(now)
+	assert.Equal(t, Time(now.Year(), now.Month(), now.Day(), 0, 0), start)
+	assert.Equal(t, time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 59, time.Local), end)
+}
+
+func TestDiffDay(t *testing.T) {
+	begin := time.Now()
+	end := begin.AddDate(0, 0, 3)
+	diffDay := DiffDay(begin, end)
+	assert.Equal(t, 3, diffDay)
+	diffDay = DiffDay(end, begin)
+	assert.Equal(t, 3, diffDay)
+	diffDay = DiffDay(begin, begin)
+	assert.Equal(t, 0, diffDay)
+}
+
+func TestDiffDayWithLayout(t *testing.T) {
+	begin := time.Now()
+	end := begin.AddDate(0, 0, 3)
+	diffDay, err := DiffDayWithLayout(begin.Format(DateTimeLayout), end.Format(DateTimeLayout), DateTimeLayout)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, diffDay)
+	_, err = DiffDayWithLayout(begin.Format(DateTimeLayout), end.Format(DateTimeLayout), DateLayout)
+	assert.Error(t, err)
+}
+
 func TestShortcut(t *testing.T) {
 	_ = Tomorrow()
 	_ = Yesterday()

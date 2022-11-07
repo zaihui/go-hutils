@@ -72,11 +72,11 @@ type CodeError interface {
 // ZError
 // nolint: govet // may be we need err stack
 type ZError struct {
+	Err     error
 	Code    string
 	Message string
 	TraceID string
 	SpanID  string
-	Err     error
 }
 
 type ZErrorOption func(*ZError)
