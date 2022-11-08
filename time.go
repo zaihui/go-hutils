@@ -11,9 +11,13 @@ const (
 	// DateTimeLayout 时间序列化
 	DateTimeLayout = "2006-01-02T15:04:05"
 	// DateTimeLayoutWithoutT 没有T的时间序列化
-	DateTimeLayoutWithoutT = "2006-01-02 15:04:05"
+	// Deprecated
+	DateTimeLayoutWithoutT = ISO8601Local
 	// DateTimeLayoutChinese 中文时间序列化
 	DateTimeLayoutChinese = "2006年01月02日 15时04分05秒"
+
+	// ISO8601Local 本地ISO8601日期序列化.
+	ISO8601Local = "2006-01-02 15:04:05"
 )
 
 // Time time.Date的快捷方法，省略sec，nsec，loc.
