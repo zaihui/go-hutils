@@ -59,6 +59,18 @@ func TestDiffDayWithLayout(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestISO8601Local(t *testing.T) {
+	datetime, err := ParseTime(ISO8601Local, "2022-01-01 10:00:00")
+	assert.NoError(t, err)
+	assert.Equal(t, Time(2022, 1, 1, 10, 0), datetime)
+}
+
+func TestDateTimeLayoutChinese(t *testing.T) {
+	datetime, err := ParseTime(DateTimeLayoutChinese, "2022年01月01日 10时00分00秒")
+	assert.NoError(t, err)
+	assert.Equal(t, Time(2022, 1, 1, 10, 0), datetime)
+}
+
 func TestShortcut(t *testing.T) {
 	_ = Tomorrow()
 	_ = Yesterday()
