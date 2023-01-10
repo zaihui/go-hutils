@@ -11,6 +11,7 @@ import (
 
 	"github.com/SkyAPM/go2sky"
 	"github.com/SkyAPM/go2sky/propagation"
+
 	// nolint:staticcheck
 	// ignore SA1019 Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
@@ -175,6 +176,7 @@ func NewUnaryClientSkywalkingInterceptor(tracer *go2sky.Tracer) grpc.UnaryClient
 }
 
 // NewUnaryServerSkywalkingInterceptor skywalking server interceptor.
+// nolint: govet
 func NewUnaryServerSkywalkingInterceptor(tracer *go2sky.Tracer, opts ...Option) grpc.UnaryServerInterceptor {
 	options := &options{
 		reportTags:    []string{},

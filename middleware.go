@@ -19,19 +19,21 @@ var (
 
 type operation func(name string, r *http.Request) string
 
+// nolint: govet
 type handler struct {
-	tracer    *go2sky.Tracer
-	name      string
-	next      http.Handler
-	extraTags map[string]string
 	// filter some health check request.
 	filterURLs []string
+	next       http.Handler
+	name       string
+	tracer     *go2sky.Tracer
+	extraTags  map[string]string
 	// get operation name.
 	operationFunc operation
 }
 
 // responseWriter is a minimal wrapper for http.ResponseWriter that allows the
 // written HTTP status code to be captured for logging.
+// nolint: govet,unused
 type responseWriter struct {
 	http.ResponseWriter
 	status      int
@@ -71,7 +73,7 @@ func FilterURL(filterURLs []string, url string) bool {
 	return false
 }
 
-func NewServerSkywalkingMiddleware(tracer *go2sky.Tracer, opts ...func(*handler)) (func(http.Handler) http.Handler, error) {
+func NewServerSkywalkingHTTPMiddleware(tracer *go2sky.Tracer, opts ...func(*handler)) (func(http.Handler) http.Handler, error) {
 	if tracer == nil {
 		panic("tracer is nil.")
 	}
