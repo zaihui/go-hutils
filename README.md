@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/zaihui/go-hutils/workflows/CI/badge.svg)](https://github.com/zaihui/go-hutils)
 [![codecov](https://codecov.io/gh/zaihui/go-hutils/branch/master/graph/badge.svg)](https://github.com/zaihui/go-hutils)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ackerr/lab)](https://goreportcard.com/report/github.com/ackerr/lab)
+[![Maintainability](https://api.codeclimate.com/v1/badges/f510fd753eb2f783a06f/maintainability)](https://codeclimate.com/github/zaihui/go-hutils/maintainability)
 
 ## Installtion
 
