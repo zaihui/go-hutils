@@ -31,6 +31,8 @@ clean:
 TEST_FLAGS = -v -race -failfast -covermode=atomic
 
 test:
+	$(shell touch ${COVERAGE_FILE} )
+	$(shell echo "" > ${COVERAGE_FILE})
 	@go test ${TEST_FLAGS} -coverprofile=${COVERAGE_FILE}  -timeout=10s ./...
 
 coverage: test

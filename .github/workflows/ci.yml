@@ -20,8 +20,7 @@ jobs:
         version: latest
 
     - name: Test
-      run: go test -v -race -failfast -covermode=atomic -coverprofile=.coverage -timeout=10s ./...
-
+      run: make test
     - name: Coverage
       uses: codecov/codecov-action@v3
       with:
