@@ -31,7 +31,7 @@ clean:
 TEST_FLAGS = -v -race -failfast -covermode=atomic
 
 test:
-	@go test -v -race -failfast -covermode=atomic -coverprofile=${COVERAGE_FILE} -coverpkg=./... -timeout=10s ./...
+	@go test -v -race -failfast  -timeout=10s ./...
 
 coverage: test
 	@go tool cover -func ${COVERAGE_FILE}
