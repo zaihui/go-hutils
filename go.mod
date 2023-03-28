@@ -4,11 +4,13 @@ go 1.19
 
 require (
 	entgo.io/ent v0.11.2
+	github.com/SkyAPM/go2sky v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/pkg/errors v0.9.1
+	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.8.0
 	go.elastic.co/apm v1.15.0
 	go.opentelemetry.io/otel v1.10.0
@@ -16,10 +18,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.10.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/grpc v1.43.0
+	skywalking.apache.org/repo/goapi v0.0.0-20220401015832-2c9eee9481eb
 )
 
 require (
-	github.com/SkyAPM/go2sky v1.5.0 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/go-licenser v0.4.1 // indirect
@@ -53,5 +55,4 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20220401015832-2c9eee9481eb // indirect
 )
